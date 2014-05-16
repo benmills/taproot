@@ -1,3 +1,11 @@
+PATH
+  remote: .
+  specs:
+    taproot (0.1.0)
+      braintree (~> 2.30.2)
+      pry (~> 0.9.12.6)
+      sinatra (~> 1.4.5)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -24,6 +32,4 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  braintree
-  pry
-  sinatra
+  taproot!

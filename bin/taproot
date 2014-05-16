@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+require "taproot"
+require 'optparse'
+require "open-uri"
+require "rack"
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: taproot [options]"
+
+  opts.on("--merchant-id [id]", "Braintree Merchant ID") do |v|
+    options[:merchant_id] = v
+  end
+
+  opts.on("--environment [env]", "Braintree Environment") do |v|
+    options[:environment] = v.to_sym
+  end
+
+  opts.on("--public-key [key]", "Braintree Public Key") do |v|
+    options[:public_key] = v
+  end
+
+  opts.on("--private-key [key]", "Braintree Private Key") do |v|
+    options[:private_key] = v
+  end
+end.parse!
+
+[:merchant_id, :environment, :public_key, :private_key].each do |k|
+  if options[k].nil?
+    puts "Need #{k}"
+    exit 1
+  end
+end
+
+def validate_environment!
+  begin
+    open("#{Braintree::Configuration.instantiate.base_merchant_url}/ping")
+  rescue Errno::ECONNREFUSED => e
+    puts "Gateway is down for url #{Braintree::Configuration.instantiate.base_merchant_url}/ping"
+    exit 1
+  rescue Errno::ENOENT => e
+    puts "Gateway is down for url #{Braintree::Configuration.instantiate.base_merchant_url}/ping"
+    exit 1
+  end
+
+  client_token = JSON.parse(Braintree::ClientToken.generate)
+
+  if client_token["paypal"].nil? == false
+    begin
+      open("#{client_token["paypal"]["baseUrl"]}/paypal")
+    rescue OpenURI::HTTPError => e
+      if e.message != "401 Unauthorized"
+        raise e
+      end
+    rescue Errno::ECONNREFUSED => e
+      puts "Can't connect to paypal base url #{client_token["paypal"]["baseUrl"]}"
+      exit 1
+    end
+  end
+rescue
+  puts "Invalid Configuration"
+  exit 1
+end
+
+Braintree::Configuration.environment = options[:environment]
+Braintree::Configuration.merchant_id = options[:merchant_id]
+Braintree::Configuration.public_key = options[:public_key]
+Braintree::Configuration.private_key = options[:private_key]
+
+validate_environment!
+
+Rack::Handler::WEBrick.run(Taproot, {}) do |server|
+  [:INT, :TERM].each { |sig| trap(sig) { server.stop } }
+end
