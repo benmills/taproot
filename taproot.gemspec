@@ -4,7 +4,7 @@ Gem::Specification.new do |gem|
   gem.authors       = ["Ben Mills"]
   gem.email         = ["ben@benmills.org"]
   gem.description   = %q{Braintree test server}
-  gem.summary       = %q{Braintree test server}
+  gem.summary       = %q{Taproot makes it easy to develop Braintree client SDKs without a server}
   gem.homepage      = "https://github.com/benmills/taproot"
 
   gem.files         = `git ls-files`.split($\)
