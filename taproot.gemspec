@@ -17,4 +17,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency "sinatra", "~> 1.4.5"
   gem.add_dependency "braintree", "~> 2.30.2"
   gem.add_dependency "pry", "~> 0.9.12.6"
+  gem.add_dependency "activesupport", "~> 4.1.1"
 end

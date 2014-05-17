@@ -3,6 +3,11 @@ require "taproot"
 require 'optparse'
 require "open-uri"
 require "rack"
+require "yaml"
+require "pry"
+require "braintree_account"
+require "config_manager"
+require 'active_support/all'
 
 options = {}
 OptionParser.new do |opts|
@@ -23,52 +28,45 @@ OptionParser.new do |opts|
   opts.on("--private-key [key]", "Braintree Private Key") do |v|
     options[:private_key] = v
   end
+
+  opts.on("-c [config file]", "--config [config file]", "Taproot YAML config") do |v|
+    options[:config_file] = v
+  end
+
+  opts.on("-p [port]", "--port [port]", "Port") do |v|
+    options[:port] = v
+  end
 end.parse!
 
-[:merchant_id, :environment, :public_key, :private_key].each do |k|
-  if options[k].nil?
-    puts "Need #{k}"
-    exit 1
+CONFIG_MANAGER = ConfigManager.new
+config_file = options.fetch(:config_file, "taproot.yml")
+
+if File.exists?(config_file)
+  config_file = File.read(config_file)
+  YAML.load(config_file).fetch("BraintreeAccounts", {}).each do |name, braintree_account_args|
+    CONFIG_MANAGER.add(name, braintree_account_args.with_indifferent_access)
   end
 end
 
-def validate_environment!
-  begin
-    open("#{Braintree::Configuration.instantiate.base_merchant_url}/ping")
-  rescue Errno::ECONNREFUSED => e
-    puts "Gateway is down for url #{Braintree::Configuration.instantiate.base_merchant_url}/ping"
-    exit 1
-  rescue Errno::ENOENT => e
-    puts "Gateway is down for url #{Braintree::Configuration.instantiate.base_merchant_url}/ping"
-    exit 1
-  end
 
-  client_token = JSON.parse(Braintree::ClientToken.generate)
+if ([:merchant_id, :environment, :public_key, :private_key] - options.keys).length == 0
+  CONFIG_MANAGER.add(
+    "commandline",
+    :environment => option[:environment],
+    :merchant_id => option[:merchant_id],
+    :public_key => option[:public_key],
+    :private_key => option[:private_key]
+  )
+end
 
-  if client_token["paypal"].nil? == false
-    begin
-      open("#{client_token["paypal"]["baseUrl"]}/paypal")
-    rescue OpenURI::HTTPError => e
-      if e.message != "401 Unauthorized"
-        raise e
-      end
-    rescue Errno::ECONNREFUSED => e
-      puts "Can't connect to paypal base url #{client_token["paypal"]["baseUrl"]}"
-      exit 1
-    end
-  end
-rescue
-  puts "Invalid Configuration"
+unless CONFIG_MANAGER.valid?
+  puts "Need at least one Braintree account."
+  puts "taproot --help"
   exit 1
 end
 
-Braintree::Configuration.environment = options[:environment]
-Braintree::Configuration.merchant_id = options[:merchant_id]
-Braintree::Configuration.public_key = options[:public_key]
-Braintree::Configuration.private_key = options[:private_key]
+CONFIG_MANAGER.activate_first!
 
-validate_environment!
-
-Rack::Handler::WEBrick.run(Taproot, {}) do |server|
+Rack::Handler::WEBrick.run(Taproot, {:Port => options.fetch(:port, "3132")}) do |server|
   [:INT, :TERM].each { |sig| trap(sig) { server.stop } }
 end

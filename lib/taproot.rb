@@ -5,7 +5,7 @@ require "braintree"
 class Taproot < Sinatra::Base
   def server_config
     {
-      :nonce_param_names => ["nonce", "payment_method_nonce"]
+      :nonce_param_names => ["nonce", "payment_method_nonce", "paymentMethodNonce"]
     }
   end
 
@@ -34,7 +34,7 @@ class Taproot < Sinatra::Base
 
   get "/" do
     content_type :json
-    JSON.pretty_generate(:message => "Taproot UP")
+    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current)
   end
 
   get "/client_token" do
@@ -59,10 +59,12 @@ class Taproot < Sinatra::Base
 
   get "/config" do
     content_type :json
+    JSON.pretty_generate(CONFIG_MANAGER.as_json)
+  end
 
-    JSON.pretty_generate(
-      :environment => Braintree::Configuration.environment,
-      :merchant_id => Braintree::Configuration.merchant_id
-    )
+  get "/config/current" do
+    content_type :json
+
+    JSON.pretty_generate(CONFIG_MANAGER.current_account.as_json)
   end
 end
