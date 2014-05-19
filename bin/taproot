@@ -1,13 +1,11 @@
 #!/usr/bin/env ruby
 require "taproot"
-require 'optparse'
-require "open-uri"
+require "optparse"
 require "rack"
 require "yaml"
 require "pry"
-require "braintree_account"
 require "config_manager"
-require 'active_support/all'
+require "exception_handler"
 
 options = {}
 OptionParser.new do |opts|
@@ -44,18 +42,17 @@ config_file = options.fetch(:config_file, "taproot.yml")
 if File.exists?(config_file)
   config_file = File.read(config_file)
   YAML.load(config_file).fetch("BraintreeAccounts", {}).each do |name, braintree_account_args|
-    CONFIG_MANAGER.add(name, braintree_account_args.with_indifferent_access)
+    CONFIG_MANAGER.add(name, braintree_account_args)
   end
 end
-
 
 if ([:merchant_id, :environment, :public_key, :private_key] - options.keys).length == 0
   CONFIG_MANAGER.add(
     "commandline",
-    :environment => option[:environment],
-    :merchant_id => option[:merchant_id],
-    :public_key => option[:public_key],
-    :private_key => option[:private_key]
+    :environment => options[:environment],
+    :merchant_id => options[:merchant_id],
+    :public_key => options[:public_key],
+    :private_key => options[:private_key]
   )
 end
 

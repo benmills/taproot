@@ -4,10 +4,6 @@ class BraintreeAccount
   RequiredOptions = [:environment, :merchant_id, :public_key, :private_key]
 
   def initialize(options)
-    RequiredOptions.each do |option|
-      raise ArgumentError.new("#{option} required. Args: #{options.inspect}") unless options.has_key?(option.to_s)
-    end
-
     @environment = options[:environment]
     @merchant_id = options[:merchant_id]
     @public_key = options[:public_key]

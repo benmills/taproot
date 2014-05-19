@@ -1,8 +1,126 @@
 require "rubygems"
 require "sinatra"
 require "braintree"
+require "term/ansicolor"
+require "exception_handler"
+require "config_manager"
 
 class Taproot < Sinatra::Base
+  use ExceptionHandling
+  include Term::ANSIColor
+
+  get "/" do
+    content_type :json
+    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current)
+  end
+
+  get "/client_token" do
+    content_type :json
+    begin
+      JSON.pretty_generate(JSON.parse(Braintree::ClientToken.generate(params)))
+    rescue Exception => e
+      status 422
+      JSON.pretty_generate(:message => e.message)
+    end
+  end
+
+  put "/customers/:customer_id" do
+    result = Braintree::Customer.create(
+      :id => params[:customer_id]
+    )
+
+    if result.success?
+      status 201
+      JSON.pretty_generate(:message => "Customer #{params[:customer_id]} created")
+    else
+      status 422
+      JSON.pretty_generate(:message => result.message)
+    end
+  end
+
+  post "/nonce/customer" do
+    nonce = nonce_from_params
+
+    content_type :json
+    if nonce
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+    else
+      JSON.pretty_generate(
+        :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
+      )
+    end
+  end
+
+  post "/nonce/transaction" do
+    nonce = nonce_from_params
+
+    content_type :json
+    if nonce
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+    else
+      JSON.pretty_generate(
+        :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
+      )
+    end
+  end
+
+  get "/config" do
+    content_type :json
+    JSON.pretty_generate(CONFIG_MANAGER.as_json)
+  end
+
+  get "/config/current" do
+    content_type :json
+    JSON.pretty_generate(CONFIG_MANAGER.current_account.as_json)
+  end
+
+  post "/config/:name/activate" do
+    content_type :json
+
+    if CONFIG_MANAGER.has_config?(params[:name])
+      status 200
+      CONFIG_MANAGER.activate!(params[:name])
+      JSON.pretty_generate(:message => "#{params[:name]} activated")
+    else
+      status 404
+      JSON.pretty_generate(:message => "#{params[:name]} not found")
+    end
+  end
+
+  put "/config/:name" do
+    content_type :json
+
+    if CONFIG_MANAGER.has_config?(params[:name])
+      status 422
+      JSON.pretty_generate(:message => "#{params[:name]} already exists")
+    else
+      begin
+        CONFIG_MANAGER.add(
+          params[:name],
+          :environment => params[:environment],
+          :merchant_id => params[:merchant_id],
+          :public_key => params[:public_key],
+          :private_key => params[:private_key]
+        )
+        CONFIG_MANAGER.test_environment!(params[:name])
+
+        status 201
+        JSON.pretty_generate(:message => "#{params[:name]} created")
+      rescue Exception => e
+        status 422
+        JSON.pretty_generate(:message => e.message)
+      end
+    end
+  end
+
+  after do
+    puts "#{bold ">>>"} #{request.env["REQUEST_METHOD"]} #{request.path} #{params.inspect}"
+    puts "#{green bold "<<<"} #{_color_status(response.status.to_i)}"
+    response.body.first.split("\n").each do |line|
+      puts "#{green bold "<<<"} #{line}"
+    end
+  end
+
   def server_config
     {
       :nonce_param_names => ["nonce", "payment_method_nonce", "paymentMethodNonce"]
@@ -32,39 +150,13 @@ class Taproot < Sinatra::Base
     {:message => e.message}
   end
 
-  get "/" do
-    content_type :json
-    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current)
-  end
-
-  get "/client_token" do
-    content_type :json
-    JSON.pretty_generate(JSON.parse(Braintree::ClientToken.generate))
-  end
-
-  post "/" do
-    puts "[PARAMS] #{params.inspect}"
-
-    nonce = nonce_from_params
-
-    content_type :json
-    if nonce
-      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+  def _color_status(status)
+    if status >= 400
+      yellow status.to_s
+    elsif status >= 500
+      red status.to_s
     else
-      JSON.pretty_generate(
-        :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
-      )
+      green status.to_s
     end
-  end
-
-  get "/config" do
-    content_type :json
-    JSON.pretty_generate(CONFIG_MANAGER.as_json)
-  end
-
-  get "/config/current" do
-    content_type :json
-
-    JSON.pretty_generate(CONFIG_MANAGER.current_account.as_json)
   end
 end
