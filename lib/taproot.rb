@@ -113,6 +113,10 @@ class Taproot < Sinatra::Base
     end
   end
 
+  get "/config/validate" do
+    JSON.pretty_generate(:message => CONFIG_MANAGER.validate_environment!)
+  end
+
   after do
     puts "#{bold ">>>"} #{request.env["REQUEST_METHOD"]} #{request.path} #{params.inspect}"
     puts "#{green bold "<<<"} #{_color_status(response.status.to_i)}"

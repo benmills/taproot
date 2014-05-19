@@ -1,6 +1,7 @@
 require "active_support/all"
 require "braintree_account"
 require "open-uri"
+require "timeout"
 
 
 class ConfigManager
@@ -39,7 +40,6 @@ class ConfigManager
 
 	def activate!(name)
 		@configs.fetch(name).activate!
-		validate_environment!
 		@current = name
 		@current_account = @configs.fetch(name)
 	end
@@ -58,27 +58,31 @@ class ConfigManager
     old = ::OpenSSL::SSL::VERIFY_PEER
     silence_warnings{ ::OpenSSL::SSL.const_set :VERIFY_PEER, OpenSSL::SSL::VERIFY_NONE }
 
-    binding.pry
-
+    puts "--- Getting client token for validation of environment"
     begin
       client_token = JSON.parse(Braintree::ClientToken.generate)
+    rescue Errno::ECONNRESET => e
+      return "The gateway is down for URL #{Braintree::Configuration.instantiate.base_merchant_url}"
     rescue Braintree::AuthenticationError => e
-      raise "Unable to authenticate to Braintree. Your keys or merchant ID may be wrong or the gateway is down."
+      return "Unable to authenticate to Braintree while getteing client token. Your keys or merchant ID may be wrong or the gateway is down."
     end
-
-    binding.pry
 
     if client_token["paypal"].nil? == false
+      puts "--- Trying to connect to paypal"
       begin
-        open("#{client_token["paypal"]["baseUrl"]}/paypal")
+        Timeout::timeout(5) { open("#{client_token["paypal"]["baseUrl"]}/paypal") }
       rescue OpenURI::HTTPError => e
         if e.message != "401 Unauthorized"
-          raise e
+          return "Error opening #{"#{client_token["paypal"]["baseUrl"]}/paypal"}: #{e.message}"
         end
       rescue Errno::ECONNREFUSED => e
-        raise "Can't connect to paypal base url #{client_token["paypal"]["baseUrl"]}"
+        return "Can't connect to paypal base url #{client_token["paypal"]["baseUrl"]}"
       end
     end
+
+    "Valid"
+  rescue Timeout::Error => e
+    "Timed out"
   ensure
     silence_warnings{ ::OpenSSL::SSL.const_set :VERIFY_PEER, old }
 	end

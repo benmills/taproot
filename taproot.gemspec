@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.homepage      = "https://github.com/benmills/taproot"
 
   gem.files         = `git ls-files`.split($\)
-  gem.executables   = ["taproot"]
+  gem.executables   = ["taprootd"]
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "taproot"
   gem.require_paths = ["lib"]
