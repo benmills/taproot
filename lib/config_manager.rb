@@ -6,9 +6,10 @@ require "timeout"
 
 class ConfigManager
 	attr_reader :current, :current_account, :current_merchant_account
-  attr_accessor :current_merchant_account
+  attr_accessor :current_merchant_account, :masked
 
 	def initialize
+    @masked = false
 		@configs = {}.with_indifferent_access
 		@current = nil
 		@current_account = nil
@@ -28,6 +29,7 @@ class ConfigManager
 
 	def add(name, braintree_account_args)
 		@configs[name] = BraintreeAccount.new(braintree_account_args.with_indifferent_access)
+    @configs[name].masked = @masked
 	end
 
 	def valid?
