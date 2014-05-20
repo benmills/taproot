@@ -113,6 +113,23 @@ class Taproot < Sinatra::Base
     end
   end
 
+  get "/config/merchant_account" do
+    content_type :json
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+  end
+
+  put "/config/merchant_account/:merchant_account" do
+    content_type :json
+    CONFIG_MANAGER.current_merchant_account = params[:merchant_account]
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+  end
+
+  delete "/config/merchant_account" do
+    content_type :json
+    CONFIG_MANAGER.current_merchant_account = nil
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+  end
+
   get "/config/validate" do
     JSON.pretty_generate(:message => CONFIG_MANAGER.validate_environment!)
   end
@@ -131,6 +148,10 @@ class Taproot < Sinatra::Base
     }
   end
 
+  def log(message)
+    puts "--- [#{CONFIG_MANAGER.current}] #{message}"
+  end
+
   def nonce_from_params
     server_config[:nonce_param_names].find do |nonce_param_name|
       if params[nonce_param_name]
@@ -140,10 +161,18 @@ class Taproot < Sinatra::Base
   end
 
   def sale(nonce, amount)
-    result = Braintree::Transaction.sale(
+    transaction_params = {
       :amount => amount,
       :payment_method_nonce => nonce,
-    )
+    }
+
+    if CONFIG_MANAGER.current_merchant_account
+      transaction_params[:merchant_account_id] = CONFIG_MANAGER.current_merchant_account
+    end
+
+    log("Creating transaction #{transaction_params.inspect}")
+
+    result = Braintree::Transaction.sale(transaction_params)
 
     if result.success?
       {:message => "created #{result.transaction.id} #{result.transaction.status}"}

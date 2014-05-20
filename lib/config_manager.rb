@@ -5,12 +5,14 @@ require "timeout"
 
 
 class ConfigManager
-	attr_reader :current, :current_account
+	attr_reader :current, :current_account, :current_merchant_account
+  attr_accessor :current_merchant_account
 
 	def initialize
 		@configs = {}.with_indifferent_access
 		@current = nil
 		@current_account = nil
+    @current_merchant_account = nil
 	end
 
 	def as_json
@@ -58,7 +60,7 @@ class ConfigManager
     old = ::OpenSSL::SSL::VERIFY_PEER
     silence_warnings{ ::OpenSSL::SSL.const_set :VERIFY_PEER, OpenSSL::SSL::VERIFY_NONE }
 
-    puts "--- Getting client token for validation of environment"
+    puts "--- [#{current}] Getting client token for validation of environment"
     begin
       client_token = JSON.parse(Braintree::ClientToken.generate)
     rescue Errno::ECONNRESET => e
@@ -68,7 +70,7 @@ class ConfigManager
     end
 
     if client_token["paypal"].nil? == false
-      puts "--- Trying to connect to paypal"
+      puts "--- [#{current}] Trying to connect to paypal"
       begin
         Timeout::timeout(5) { open("#{client_token["paypal"]["baseUrl"]}/paypal") }
       rescue OpenURI::HTTPError => e
@@ -82,7 +84,7 @@ class ConfigManager
 
     "Valid"
   rescue Timeout::Error => e
-    "Timed out"
+    "Timed out connecting to paypal at #{"#{client_token["paypal"]["baseUrl"]}/paypal"}"
   ensure
     silence_warnings{ ::OpenSSL::SSL.const_set :VERIFY_PEER, old }
 	end
