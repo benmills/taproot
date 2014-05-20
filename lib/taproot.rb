@@ -47,6 +47,8 @@ class Taproot < Sinatra::Base
       :id => params[:customer_id]
     )
 
+    content_type :json
+
     if result.success?
       status 201
       JSON.pretty_generate(:message => "Customer #{params[:customer_id]} created")
@@ -150,6 +152,19 @@ class Taproot < Sinatra::Base
 
   get "/config/validate" do
     JSON.pretty_generate(:message => CONFIG_MANAGER.validate_environment!)
+  end
+
+  error do
+    content_type :json
+    status 400 # or whatever
+
+    e = env['sinatra.error']
+    JSON.pretty_generate({:result => 'error', :message => e.message})
+  end
+
+  not_found do
+    content_type :json
+    JSON.pretty_generate({:message => "Not found. GET / to see all routes"})
   end
 
   after do
