@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+require "awesome_print"
+require "cli"
+
+if ARGV.first.nil?
+  ARGV[0] = "index"
+end
+
+ARGV[0] = ARGV[0].gsub("/", "_").gsub(":", "_")
+
+if TaprootCLI.respond_to?(ARGV.first.to_sym)
+  ap TaprootCLI.send(ARGV.first.to_sym)
+end
