@@ -10,7 +10,6 @@ class Taproot < Sinatra::Base
   use ExceptionHandling
   register Sinatra::Decompile
   include Term::ANSIColor
-  helpers Sinatra::JSON
 
   set :public_folder, "."
   set :views, "."
@@ -22,21 +21,24 @@ class Taproot < Sinatra::Base
   end
 
   get "/" do
+    content_type :json
+
     routes = {}
     routes["DELETE"] = Taproot.routes["DELETE"].map { |r| Taproot.decompile(r[0], r[1]) }
     routes["GET"] = Taproot.routes["GET"].map { |r| Taproot.decompile(r[0], r[1]) }
     routes["POST"] = Taproot.routes["POST"].map { |r| Taproot.decompile(r[0], r[1]) }
     routes["PUT"] = Taproot.routes["PUT"].map { |r| Taproot.decompile(r[0], r[1]) }
 
-    json(:message => "Taproot UP", :config => CONFIG_MANAGER.current, :routes => routes)
+    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current, :routes => routes)
   end
 
   get "/client_token" do
+    content_type :json
     begin
-      json(JSON.parse(Braintree::ClientToken.generate(params)))
+      JSON.pretty_generate(JSON.parse(Braintree::ClientToken.generate(params)))
     rescue Exception => e
       status 422
-      json(:message => e.message)
+      JSON.pretty_generate(:message => e.message)
     end
   end
 
@@ -47,20 +49,21 @@ class Taproot < Sinatra::Base
 
     if result.success?
       status 201
-      json(:message => "Customer #{params[:customer_id]} created")
+      JSON.pretty_generate(:message => "Customer #{params[:customer_id]} created")
     else
       status 422
-      json(:message => result.message)
+      JSON.pretty_generate(:message => result.message)
     end
   end
 
   post "/nonce/customer" do
     nonce = nonce_from_params
 
+    content_type :json
     if nonce
-      json(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
     else
-      json(
+      JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
       )
     end
@@ -69,38 +72,45 @@ class Taproot < Sinatra::Base
   post "/nonce/transaction" do
     nonce = nonce_from_params
 
+    content_type :json
     if nonce
-      json(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
     else
-      json(
+      JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
       )
     end
   end
 
   get "/config" do
-    json(CONFIG_MANAGER.as_json)
+    content_type :json
+    JSON.pretty_generate(CONFIG_MANAGER.as_json)
   end
 
   get "/config/current" do
-    json(CONFIG_MANAGER.current_account.as_json)
+    content_type :json
+    JSON.pretty_generate(CONFIG_MANAGER.current_account.as_json)
   end
 
   post "/config/:name/activate" do
+    content_type :json
+
     if CONFIG_MANAGER.has_config?(params[:name])
       status 200
       CONFIG_MANAGER.activate!(params[:name])
-      json(:message => "#{params[:name]} activated")
+      JSON.pretty_generate(:message => "#{params[:name]} activated")
     else
       status 404
-      json(:message => "#{params[:name]} not found")
+      JSON.pretty_generate(:message => "#{params[:name]} not found")
     end
   end
 
   put "/config/:name" do
+    content_type :json
+
     if CONFIG_MANAGER.has_config?(params[:name])
       status 422
-      json(:message => "#{params[:name]} already exists")
+      JSON.pretty_generate(:message => "#{params[:name]} already exists")
     else
       begin
         CONFIG_MANAGER.add(
@@ -113,30 +123,33 @@ class Taproot < Sinatra::Base
         CONFIG_MANAGER.test_environment!(params[:name])
 
         status 201
-        json(:message => "#{params[:name]} created")
+        JSON.pretty_generate(:message => "#{params[:name]} created")
       rescue Exception => e
         status 422
-        json(:message => e.message)
+        JSON.pretty_generate(:message => e.message)
       end
     end
   end
 
   get "/config/merchant_account" do
-    json(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+    content_type :json
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
   end
 
   put "/config/merchant_account/:merchant_account" do
+    content_type :json
     CONFIG_MANAGER.current_merchant_account = params[:merchant_account]
-    json(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
   end
 
   delete "/config/merchant_account" do
+    content_type :json
     CONFIG_MANAGER.current_merchant_account = nil
-    json(:merchant_account => CONFIG_MANAGER.current_merchant_account)
+    JSON.pretty_generate(:merchant_account => CONFIG_MANAGER.current_merchant_account)
   end
 
   get "/config/validate" do
-    json(:message => CONFIG_MANAGER.validate_environment!)
+    JSON.pretty_generate(:message => CONFIG_MANAGER.validate_environment!)
   end
 
   after do
