@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    taproot (0.1.0)
+    taproot (0.1.2)
       activesupport (~> 4.1.1)
       awesome_print (~> 1.2.0)
       braintree (~> 2.30.2)
