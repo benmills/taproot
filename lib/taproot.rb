@@ -11,6 +11,15 @@ class Taproot < Sinatra::Base
   register Sinatra::Decompile
   include Term::ANSIColor
 
+  set :public_folder, "."
+  set :views, "."
+  set :static, true
+
+  get "/web" do
+    @client_token = Braintree::ClientToken.generate(params)
+    erb :index
+  end
+
   get "/" do
     content_type :json
 
