@@ -1,5 +1,6 @@
 require "rubygems"
 require "sinatra"
+require "sinatra/contrib/all"
 require "braintree"
 require "term/ansicolor"
 require "exception_handler"
@@ -7,11 +8,19 @@ require "config_manager"
 
 class Taproot < Sinatra::Base
   use ExceptionHandling
+  register Sinatra::Decompile
   include Term::ANSIColor
 
   get "/" do
     content_type :json
-    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current)
+
+    routes = {}
+    routes["DELETE"] = Taproot.routes["DELETE"].map { |r| Taproot.decompile(r[0], r[1]) }
+    routes["GET"] = Taproot.routes["GET"].map { |r| Taproot.decompile(r[0], r[1]) }
+    routes["POST"] = Taproot.routes["POST"].map { |r| Taproot.decompile(r[0], r[1]) }
+    routes["PUT"] = Taproot.routes["PUT"].map { |r| Taproot.decompile(r[0], r[1]) }
+
+    JSON.pretty_generate(:message => "Taproot UP", :config => CONFIG_MANAGER.current, :routes => routes)
   end
 
   get "/client_token" do

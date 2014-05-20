@@ -20,4 +20,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency "activesupport", "~> 4.1.1"
   gem.add_dependency "term-ansicolor", "~> 1.3.0"
   gem.add_dependency "awesome_print", "~> 1.2.0"
+  gem.add_dependency "sinatra-contrib", "~> 1.4.2"
 end
