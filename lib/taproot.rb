@@ -35,6 +35,12 @@ class Taproot < Sinatra::Base
   get "/client_token" do
     content_type :json
     begin
+      if params["customer_id"]
+        Braintree::Customer.create(
+          :id => params["customer_id"]
+        )
+      end
+
       JSON.pretty_generate(JSON.parse(Braintree::ClientToken.generate(params)))
     rescue Exception => e
       status 422
