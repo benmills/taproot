@@ -68,7 +68,7 @@ class ConfigManager
     rescue Errno::ECONNRESET => e
       return "The gateway is down for URL #{Braintree::Configuration.instantiate.base_merchant_url}"
     rescue Braintree::AuthenticationError => e
-      return "Unable to authenticate to Braintree while getteing client token. Your keys or merchant ID may be wrong or the gateway is down."
+      return "Unable to authenticate to Braintree while getting client token. Your keys or merchant ID may be wrong or the gateway is down."
     end
 
     if client_token["paypal"].nil? == false
