@@ -257,7 +257,7 @@ class Taproot < Sinatra::Base
     })
 
     if result.success?
-      {:message => "Vaulted payment method #{result.payment_method.id}"}
+      {:message => "Vaulted payment method #{result.payment_method.token}"}
     else
       {:message => result.message}
     end
