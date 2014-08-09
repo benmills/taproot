@@ -95,6 +95,27 @@ class Taproot < Sinatra::Base
     end
   end
 
+  post "/customers/:customer_id/vault" do
+    content_type :json
+
+    nonce = nonce_from_params
+    customer_id = params[:customer_id]
+
+    unless customer_id.present?
+      status 422
+      JSON.pretty_generate(:message => "Required param: customer_id")
+      return
+    end
+
+    if nonce
+      JSON.pretty_generate(vault(nonce, customer_id))
+    else
+      JSON.pretty_generate(
+        :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
+      )
+    end
+  end
+
   get "/config" do
     content_type :json
     JSON.pretty_generate(CONFIG_MANAGER.as_json)
@@ -225,6 +246,21 @@ class Taproot < Sinatra::Base
     end
   rescue Exception => e
     {:message => e.message}
+  end
+
+  def vault(nonce, customer_id)
+    log("Vaulting payment method #{nonce} for customer #{customer_id}")
+
+    result = Braintree::PaymentMethod.create({
+      :customer_id => customer_id,
+      :payment_method_nonce => nonce
+    })
+
+    if result.success?
+      {:message => "Vaulted payment method #{result.payment_method.id}"}
+    else
+      {:message => result.message}
+    end
   end
 
   def _client_token(options)
