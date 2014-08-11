@@ -239,11 +239,14 @@ class Taproot < Sinatra::Base
 
     result = Braintree::Transaction.sale(transaction_params)
 
-    if result.success?
+    void_result = Braintree::Transaction.void(result.transaction.id)
+
+    if result.success? and void_result.success?
       {:message => "created #{result.transaction.id} #{result.transaction.status}"}
     else
-      {:message => result.message}
+      {:message => result.message || void_result.message}
     end
+
   rescue Exception => e
     {:message => e.message}
   end
