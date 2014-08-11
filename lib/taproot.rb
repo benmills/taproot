@@ -74,7 +74,7 @@ class Taproot < Sinatra::Base
 
     content_type :json
     if nonce
-      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 1)))
     else
       JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
@@ -87,7 +87,7 @@ class Taproot < Sinatra::Base
 
     content_type :json
     if nonce
-      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 1)))
     else
       JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
