@@ -1,6 +1,0 @@
-BraintreeAccounts:
-  example:
-    merchant_id: myid
-    environment: sandbox
-    public_key: mykey
-    private_key: myprikey
