@@ -1,0 +1,16 @@
+  <form method="post" action="/transaction">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <input type="text" class="form-control" value="4111111111111111">
+        <input type="text" class="form-control" value="10/20">
+      </div>
+      <div class="panel-footer">
+        <input class="btn btn-default" type="submit">
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  braintree.setup("<%= @client_token %>", "dropin", {container: "dropin"});
+</script>
