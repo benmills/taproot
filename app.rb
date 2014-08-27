@@ -21,17 +21,31 @@ Braintree::Configuration.private_key = '9a37eb11d451554bfeece5f20ec1cf35'
 # Braintree::Configuration.public_key = '4fmd3mrwgc9bdvkh'
 # Braintree::Configuration.private_key = 'd3af2d01d2828a068eca39455f864d1e'
 
+def generate_client_token
+  raw_client_token = Braintree::ClientToken.generate
+
+  if params["touchDisabled"]
+    client_token = JSON.parse(Base64.decode64(raw_client_token))
+    client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
+    Base64.strict_encode64(JSON.dump(client_token)).chomp
+  else
+    raw_client_token
+  end
+end
+
+get "/client_token" do
+  content_type :json
+  Base64.decode64(generate_client_token)
+end
+
 get "/client_token.json" do
   content_type :json
-
-  {
-    :client_token => Braintree::ClientToken.generate
-  }.to_json
+  {:client_token => generate_client_token}.to_json
 end
 
 get "/client_token/inspect" do
   content_type :json
-  JSON.pretty_generate(JSON.parse(Base64.decode64(Braintree::ClientToken.generate)))
+  JSON.pretty_generate(JSON.parse(Base64.decode64(generate_client_token)))
 end
 
 get "/dropin" do
