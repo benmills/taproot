@@ -33,16 +33,17 @@ Braintree::Configuration.private_key = 'c751bdf919486d6b083b82b80b183f1d'
 # Braintree::Configuration.public_key = '4fmd3mrwgc9bdvkh'
 # Braintree::Configuration.private_key = 'd3af2d01d2828a068eca39455f864d1e'
 
-def generate_client_token
+def generate_client_token(overrides={})
   raw_client_token = Braintree::ClientToken.generate
+  client_token = JSON.parse(Base64.decode64(raw_client_token))
 
   if params["touchDisabled"]
-    client_token = JSON.parse(Base64.decode64(raw_client_token))
     client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
-    Base64.strict_encode64(JSON.dump(client_token)).chomp
-  else
-    raw_client_token
   end
+
+  client_token["paypal"]["allowHttp"] = true
+
+  Base64.strict_encode64(JSON.dump(client_token.merge(overrides))).chomp
 end
 
 get "/client_token" do
@@ -68,7 +69,7 @@ get "/config/current" do
 end
 
 get "/dropin" do
-  @client_token = Braintree::ClientToken.generate
+  @client_token = generate_client_token
   erb :dropin
 end
 

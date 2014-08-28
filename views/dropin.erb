@@ -2,7 +2,6 @@
     <div class="panel panel-default">
       <div class="panel-body">
         <div id="dropin"></div>
-        <div id="paypal-button"></div>
       </div>
       <div class="panel-footer">
         <input class="btn btn-default" type="submit">
@@ -12,5 +11,5 @@
 </div>
 
 <script>
-  braintree.setup("<%= @client_token %>", "paypal", {container: "paypal-button"});
+braintree.setup("<%= @client_token %>", "dropin", {container: "dropin"});
 </script>
