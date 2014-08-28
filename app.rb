@@ -5,10 +5,10 @@ require "base64"
 require "pry"
 
 # Mark's test prod aaccount
-Braintree::Configuration.environment = :production
-Braintree::Configuration.merchant_id = 'nxtmb3rqt8tr35v2'
-Braintree::Configuration.public_key = 'b2kqymfxnhx7wdtz'
-Braintree::Configuration.private_key = '8f00a7a5df9541ec05f2fa8e1b333f29'
+# Braintree::Configuration.environment = :production
+# Braintree::Configuration.merchant_id = 'nxtmb3rqt8tr35v2'
+# Braintree::Configuration.public_key = 'b2kqymfxnhx7wdtz'
+# Braintree::Configuration.private_key = '8f00a7a5df9541ec05f2fa8e1b333f29'
 
 # Mark's test prod aaccount
 # Braintree::Configuration.environment = :production
@@ -17,10 +17,10 @@ Braintree::Configuration.private_key = '8f00a7a5df9541ec05f2fa8e1b333f29'
 # Braintree::Configuration.private_key = '8cec496e161abeae7a96d8ed2625c8f0'
 
 # Ben's test prod account
-# Braintree::Configuration.environment = :production
-# Braintree::Configuration.merchant_id = 'dnnsn36rs57sqvym'
-# Braintree::Configuration.public_key = 'pkcp77fk7m52gx3t'
-# Braintree::Configuration.private_key = '9a37eb11d451554bfeece5f20ec1cf35'
+Braintree::Configuration.environment = :production
+Braintree::Configuration.merchant_id = 'dnnsn36rs57sqvym'
+Braintree::Configuration.public_key = 'pkcp77fk7m52gx3t'
+Braintree::Configuration.private_key = '9a37eb11d451554bfeece5f20ec1cf35'
 
 # Braintree::Configuration.environment = :sandbox
 # Braintree::Configuration.merchant_id = 'qh5bmbx4v6pzw93h'
