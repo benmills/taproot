@@ -17,16 +17,16 @@ require "pry"
 # Braintree::Configuration.private_key = '8cec496e161abeae7a96d8ed2625c8f0'
 
 # Stubhub
-Braintree::Configuration.environment = :production
-Braintree::Configuration.merchant_id = 'pm585nc2457zpw2w'
-Braintree::Configuration.public_key = 'wmckxcq3zpyc5rwf'
-Braintree::Configuration.private_key = 'c751bdf919486d6b083b82b80b183f1d'
+# Braintree::Configuration.environment = :production
+# Braintree::Configuration.merchant_id = 'pm585nc2457zpw2w'
+# Braintree::Configuration.public_key = 'wmckxcq3zpyc5rwf'
+# Braintree::Configuration.private_key = 'c751bdf919486d6b083b82b80b183f1d'
 
 # Ben's test prod account
-# Braintree::Configuration.environment = :production
-# Braintree::Configuration.merchant_id = 'dnnsn36rs57sqvym'
-# Braintree::Configuration.public_key = 'pkcp77fk7m52gx3t'
-# Braintree::Configuration.private_key = '9a37eb11d451554bfeece5f20ec1cf35'
+Braintree::Configuration.environment = :production
+Braintree::Configuration.merchant_id = 'dnnsn36rs57sqvym'
+Braintree::Configuration.public_key = 'pkcp77fk7m52gx3t'
+Braintree::Configuration.private_key = '9a37eb11d451554bfeece5f20ec1cf35'
 
 # Braintree::Configuration.environment = :sandbox
 # Braintree::Configuration.merchant_id = 'qh5bmbx4v6pzw93h'
