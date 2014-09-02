@@ -74,3 +74,7 @@ body {
     border-bottom: 0;
   }
 }
+
+thead {
+  font-weight: bold;
+}

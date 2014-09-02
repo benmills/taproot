@@ -14,6 +14,7 @@ GEM
     rack (1.5.2)
     rack-protection (1.5.3)
       rack
+    redis (3.1.0)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
       rspec-expectations (~> 2.14.0)
@@ -37,6 +38,7 @@ PLATFORMS
 DEPENDENCIES
   braintree
   pry
+  redis
   rspec
   shotgun
   sinatra
