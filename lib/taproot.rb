@@ -45,7 +45,11 @@ class Taproot < Sinatra::Base
       params.delete("decode")
 
       status 201
-      JSON.pretty_generate(:client_token => _client_token(:decoded => decode))
+      if decode
+        JSON.pretty_generate(_client_token(:decoded => true))
+      else
+        JSON.pretty_generate(:client_token => _client_token)
+      end
     rescue Exception => e
       content_type :json
       status 422
@@ -266,11 +270,11 @@ class Taproot < Sinatra::Base
     end
   end
 
-  def _client_token(options)
+  def _client_token(options = {})
     content_type :json
     client_token = Braintree::ClientToken.generate(params)
     if options[:decoded]
-      JSON.pretty_generate(JSON.parse(Base64.decode64(client_token)))
+      JSON.parse(Base64.decode64(client_token))
     else
       client_token
     end
