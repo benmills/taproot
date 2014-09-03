@@ -40,6 +40,14 @@ class App < Sinatra::Base
   @@env_manager.activate!
   end
 
+  def control_panel_url
+    url = Braintree::Configuration.instantiate.base_merchant_url
+    if url =~ /sandbox/
+      url.gsub("api.", "")
+    else
+      url.gsub("api", "www")
+    end
+  end
 
   def generate_client_token(overrides={})
     raw_client_token = Braintree::ClientToken.generate
@@ -89,11 +97,13 @@ class App < Sinatra::Base
     @envs = @@env_manager.envs
     @current_merchant_id = @@env_manager.current[:merchant_id]
     @braintree_requests = get_braintree_requests
+    @url = control_panel_url
 
     erb :env
   end
 
   post "/env" do
+    @@redis.del("braintree_requests")
     @@env_manager.activate!(params[:new_env])
     redirect "/"
   end
@@ -130,6 +140,16 @@ class App < Sinatra::Base
 
     @@redis.lpush("braintree_requests", braintree_request.to_json)
 
-    braintree_request.to_json
+    redirect "/"
+  end
+
+  post "/void/:transaction_id" do
+    Braintree::Transaction.void(params["transaction_id"])
+    redirect "/"
+  end
+
+  post "/wipe" do
+    @@redis.del("braintree_requests")
+    redirect "/"
   end
 end

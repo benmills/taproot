@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Narrow Jumbotron Template for Bootstrap</title>
+    <title>Taproot: Braintree Test Server</title>
 
     <!-- Bootstrap core CSS -->
     <link href="/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -30,15 +30,28 @@
   </head>
 
   <body>
-
     <div class="container">
-      <div class="header">
-        <ul class="nav nav-pills">
-          <li class="active"><a href="/">Taproot</a></li>
-          <li><a href="/dropin">Drop-In</a></li>
-          <li><a href="/custom">Custom</a></li>
-        </ul>
-      </div>
+      <nav class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li><a href="/dropin">Drop-In</a></li>
+              <li><a href="/custom">Custom</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li>
+              <form action="/wipe" method="post">
+                <button type="submit" class="btn btn-danger navbar-btn">Wipe</button>
+              </form>
+              </li>
+              <li><a href="/">Manage</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
 
       <%= yield %>
 
