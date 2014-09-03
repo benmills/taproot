@@ -89,8 +89,8 @@ class App < Sinatra::Base
   end
 
   get "/client_token/inspect" do
-    content_type :json
-    JSON.pretty_generate(JSON.parse(Base64.decode64(generate_client_token)))
+    @client_token = Base64.decode64(generate_client_token)
+    erb :client_token
   end
 
   get "/" do

@@ -1,0 +1,12 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+    Client Token
+  </div>
+  <div class="panel-body" id="json">
+  </div>
+</div>
+
+<script src="/inspector-json.js"></script>
+<script>
+new InspectorJSON({element: "json", json: '<%= @client_token.gsub("'", "") %>'});
+</script>
