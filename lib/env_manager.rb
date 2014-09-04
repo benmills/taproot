@@ -12,15 +12,15 @@ class EnvManager
   end
 
   def activate!(env_name=nil)
-    if env_name.nil?
-      env_name = @redis.get("current_env_nickname")
-      if env_name.nil?
-        activate!(@envs.keys.first)
-      end
-    else
-      @redis.set("current_env_nickname", env_name)
+    redis_env_name = @redis.get("current_env_nickname")
+
+    if env_name.nil? && redis_env_name.nil?
+      return activate!(@envs.keys.first)
+    elsif env_name.nil?
+      env_name = redis_env_name
     end
 
+    @redis.set("current_env_nickname", env_name)
     @envs[env_name].activate!
   end
 
