@@ -17,6 +17,15 @@ class App < Sinatra::Base
 
     @@env_manager.add(
     BraintreeEnvironment.new(
+      "Development",
+      :environment => :development,
+      :merchant_id => 'altpay_merchant',
+      :public_key => 'altpay_merchant_public_key',
+      :private_key => 'altpay_merchant_private_key'
+    ))
+
+    @@env_manager.add(
+    BraintreeEnvironment.new(
       "Mark",
       :environment => :production,
       :merchant_id => 'nxtmb3rqt8tr35v2',
@@ -138,6 +147,10 @@ class App < Sinatra::Base
 
     if params["touchDisabled"]
       client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
+    end
+
+    if params["venmo"]
+      client_token["venmo"] = params["venmo"]
     end
 
     client_token["paypal"]["allowHttp"] = true if client_token.has_key?("paypal")
