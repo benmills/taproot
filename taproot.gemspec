@@ -12,7 +12,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "taproot"
   gem.require_paths = ["lib"]
-  gem.version       = "0.1.5"
+  gem.version       = "0.1.6"
 
   gem.add_dependency "sinatra", "~> 1.4.5"
   gem.add_dependency "braintree", "~> 2.33.1"
