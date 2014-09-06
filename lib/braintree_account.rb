@@ -24,8 +24,6 @@ class BraintreeAccount
     {
       :environment => @environment,
       :merchant_id => @merchant_id,
-      :public_key => _display(@public_key),
-      :private_key => _display(@private_key)
     }
   end
 

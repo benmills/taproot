@@ -5,6 +5,7 @@ require "braintree"
 require "term/ansicolor"
 require "exception_handler"
 require "config_manager"
+require "base64"
 
 class Taproot < Sinatra::Base
   use ExceptionHandling
@@ -33,7 +34,6 @@ class Taproot < Sinatra::Base
   end
 
   get "/client_token" do
-    content_type :json
     begin
       if params["customer_id"]
         Braintree::Customer.create(
@@ -41,19 +41,17 @@ class Taproot < Sinatra::Base
         )
       end
 
-      raw_client_token = Braintree::ClientToken.generate
-      client_token = JSON.parse(Base64.decode64(raw_client_token))
+      decode = params.has_key?("decode")
+      params.delete("decode")
 
-      if params["touchDisabled"]
-        client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
+      status 201
+      if decode
+        JSON.pretty_generate(_client_token(:decoded => true))
+      else
+        JSON.pretty_generate(:client_token => _client_token)
       end
-
-      if Braintree::Configuration.environment == :production
-        client_token["venmo"] = "production"
-      end
-
-      JSON.pretty_generate(client_token)
     rescue Exception => e
+      content_type :json
       status 422
       JSON.pretty_generate(:message => e.message)
     end
@@ -80,7 +78,7 @@ class Taproot < Sinatra::Base
 
     content_type :json
     if nonce
-      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 1)))
     else
       JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
@@ -93,7 +91,28 @@ class Taproot < Sinatra::Base
 
     content_type :json
     if nonce
-      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 10)))
+      JSON.pretty_generate(sale(nonce, params.fetch(:amount, 1)))
+    else
+      JSON.pretty_generate(
+        :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
+      )
+    end
+  end
+
+  post "/customers/:customer_id/vault" do
+    content_type :json
+
+    nonce = nonce_from_params
+    customer_id = params[:customer_id]
+
+    unless customer_id.present?
+      status 422
+      JSON.pretty_generate(:message => "Required param: customer_id")
+      return
+    end
+
+    if nonce
+      JSON.pretty_generate(vault(nonce, customer_id))
     else
       JSON.pretty_generate(
         :message => "Required params: #{server_config[:nonce_param_names].join(", or ")}"
@@ -224,13 +243,49 @@ class Taproot < Sinatra::Base
 
     result = Braintree::Transaction.sale(transaction_params)
 
-    if result.success?
+    if result.transaction.present?
+      void_result = Braintree::Transaction.void(result.transaction.id)
+    end
+
+    if result.success? and void_result.present? and void_result.success?
       {:message => "created #{result.transaction.id} #{result.transaction.status}"}
+    else
+      {:message => result.message || void_result.message}
+    end
+
+  rescue Exception => e
+    {:message => e.message}
+  end
+
+  def vault(nonce, customer_id)
+    log("Vaulting payment method #{nonce} for customer #{customer_id}")
+
+    result = Braintree::PaymentMethod.create({
+      :customer_id => customer_id,
+      :payment_method_nonce => nonce
+    })
+
+    if result.success?
+      {:message => "Vaulted payment method #{result.payment_method.token}"}
     else
       {:message => result.message}
     end
-  rescue Exception => e
-    {:message => e.message}
+  end
+
+  def _client_token(options = {})
+    content_type :json
+
+    raw_client_token = Braintree::ClientToken.generate(params)
+    client_token = JSON.parse(Base64.decode64(raw_client_token))
+    if Braintree::Configuration.environment == :production
+      client_token["venmo"] = "production"
+    end
+
+    if options[:decoded]
+      client_token
+    else
+      Base64.strict_encode64(JSON.dump(client_token))
+    end
   end
 
   def _color_status(status)
