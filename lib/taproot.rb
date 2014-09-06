@@ -41,7 +41,18 @@ class Taproot < Sinatra::Base
         )
       end
 
-      JSON.pretty_generate(JSON.parse(Braintree::ClientToken.generate(params)))
+      raw_client_token = Braintree::ClientToken.generate
+      client_token = JSON.parse(Base64.decode64(raw_client_token))
+
+      if params["touchDisabled"]
+        client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
+      end
+
+      if Braintree::Configuration.environment == :production
+        client_token["venmo"] = "production"
+      end
+
+      JSON.pretty_generate(client_token)
     rescue Exception => e
       status 422
       JSON.pretty_generate(:message => e.message)
