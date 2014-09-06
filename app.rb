@@ -3,6 +3,7 @@ require "braintree"
 require "json"
 require "redis"
 require "sinatra"
+require "rest-client"
 
 require "./lib/braintree_env"
 require "./lib/braintree_request"
@@ -15,13 +16,21 @@ class App < Sinatra::Base
     @@braintree_request_repository = BraintreeRequestRepository.new(@@redis)
     @@env_manager = EnvManager.new(@@redis)
 
+    @@env_manager.add(BraintreeEnvironment.new(
+      "Ben Sand",
+      :environment => :sandbox,
+      :merchant_id => 'qh5bmbx4v6pzw93h',
+      :public_key => '4fmd3mrwgc9bdvkh',
+      :private_key => 'd3af2d01d2828a068eca39455f864d1e'
+    ))
+
     @@env_manager.add(
     BraintreeEnvironment.new(
-      "Development",
-      :environment => :development,
-      :merchant_id => 'altpay_merchant',
-      :public_key => 'altpay_merchant_public_key',
-      :private_key => 'altpay_merchant_private_key'
+      "CC and PP Prod",
+      :environment => :production,
+      :merchant_id => 'dfy45jdj3dxkmz5m',
+      :public_key => '8ph7456kwcnm4gdg',
+      :private_key => '056b38d6ba7a5ac07dedc38c8ec7b232'
     ))
 
     @@env_manager.add(
@@ -41,14 +50,11 @@ class App < Sinatra::Base
       :private_key => '9a37eb11d451554bfeece5f20ec1cf35'
     ))
 
-    @@env_manager.add(BraintreeEnvironment.new(
-      "Ben Sand",
-      :environment => :sandbox,
-      :merchant_id => 'qh5bmbx4v6pzw93h',
-      :public_key => '4fmd3mrwgc9bdvkh',
-      :private_key => 'd3af2d01d2828a068eca39455f864d1e'
-    ))
     @@env_manager.activate!
+  end
+
+  get "/capi_proxy/*" do
+    url = request.path.split("/capi_proxy/")
   end
 
   get "/client_token" do
