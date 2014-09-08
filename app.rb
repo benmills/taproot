@@ -204,6 +204,8 @@ class App < Sinatra::Base
       if params["venmo"] == "off"
         client_token.delete("venmo")
       end
+    else Braintree::Configuration.environment == :production
+      client_token["venmo"] = "production"
     end
 
     client_token["paypal"]["allowHttp"] = true if client_token.has_key?("paypal")
