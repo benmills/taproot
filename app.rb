@@ -144,6 +144,22 @@ class App < Sinatra::Base
     redirect "/"
   end
 
+  post "/transaction/:transaction_id/void.json" do
+    content_type :json
+
+    result = _void(params["transaction_id"])
+    braintree_request = BraintreeRequest.from_result(params, result)
+    @@braintree_request_repository.save(braintree_request)
+
+    if result.success?
+      _transaction_to_json(result.transaction).to_json
+    else
+      {
+        :error => result.message
+      }.to_json
+    end
+  end
+
   post "/wipe" do
     @@redis.flushall
     redirect "/"
