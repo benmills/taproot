@@ -222,7 +222,7 @@ class App < Sinatra::Base
     if transaction.payment_instrument_type == "credit_card"
       json[:display] = "#{transaction.credit_card_details.card_type} ending in #{transaction.credit_card_details.last_4}"
     else
-      json[:display] = "PayPal #{transaction.paypal_details.payer_email}"
+      json[:display] = "PayPal #{transaction.paypal_details.payer_email} #{transactions.paypal_details.authorization_id}"
     end
 
     json
