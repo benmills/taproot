@@ -87,7 +87,7 @@ class App < Sinatra::Base
 
   get "/transactions.json" do
     results = Braintree::Transaction.search do |search|
-      search.created_at >= Time.now - 60*60*24*7
+      search.created_at >= Time.now - 60*60*24
     end
 
     transactions = []
