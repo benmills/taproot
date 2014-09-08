@@ -85,6 +85,23 @@ class App < Sinatra::Base
     JSON.pretty_generate(@@braintree_request_repository.get.map(&:as_json))
   end
 
+  get "/transactions.json" do
+    results = Braintree::Transaction.search do |search|
+      search.created_at >= Time.now - 60*60*24*7
+    end
+
+    transactions = []
+
+    results.each do |transaction|
+      transactions << _transaction_to_json(transaction)
+    end
+
+    content_type :json
+    JSON.pretty_generate({
+      :transactions => transactions
+    })
+  end
+
   post "/env" do
     @@redis.del("braintree_requests")
     @@env_manager.activate!(params[:new_env])
@@ -108,7 +125,18 @@ class App < Sinatra::Base
 
   post "/transaction.json" do
     content_type :json
-    _create_transaction(params).to_json
+
+    result = _sale(params["payment_method_nonce"])
+    braintree_request = BraintreeRequest.from_result(params, result)
+    @@braintree_request_repository.save(braintree_request)
+
+    if result.success?
+      _transaction_to_json(result.transaction).to_json
+    else
+      {
+        :error => result.message
+      }.to_json
+    end
   end
 
   post "/transaction/:transaction_id/void" do
@@ -163,5 +191,21 @@ class App < Sinatra::Base
     # client_token["analytics"]["url"] = "#{client_token["clientApiUrl"]}/analytics"
 
     Base64.strict_encode64(JSON.dump(client_token.merge(overrides))).chomp
+  end
+
+  def _transaction_to_json(transaction)
+    json = {
+      :id => transaction.id,
+      :status => transaction.status,
+      :amount => transaction.amount.to_i,
+    }
+
+    if transaction.payment_instrument_type == "credit_card"
+      json[:display] = "#{transaction.credit_card_details.card_type} ending in #{transaction.credit_card_details.last_4}"
+    else
+      json[:display] = "PayPal #{transaction.paypal_details.payer_email}"
+    end
+
+    json
   end
 end
