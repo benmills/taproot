@@ -201,6 +201,9 @@ class App < Sinatra::Base
 
     if params["venmo"]
       client_token["venmo"] = params["venmo"]
+      if params["venmo"] == "off"
+        client_token.delete("venmo")
+      end
     end
 
     client_token["paypal"]["allowHttp"] = true if client_token.has_key?("paypal")
