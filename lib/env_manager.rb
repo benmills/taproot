@@ -20,6 +20,8 @@ class EnvManager
       env_name = redis_env_name
     end
 
+    puts "Activating #{env_name}"
+
     @redis.set("current_env_nickname", env_name)
     @envs[env_name].activate!
   end

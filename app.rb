@@ -10,9 +10,25 @@ require "./lib/braintree_request"
 require "./lib/braintree_request_repository"
 require "./lib/env_manager"
 
+class Braintree::Configuration
+  def server # :nodoc:
+    case @environment
+    when :development
+      "localhost"
+    when :production
+      "#{endpoint}.braintreegateway.com"
+    when :qa
+      "gateway.qa.braintreepayments.com"
+    when :sandbox
+      "api.sandbox.braintreegateway.com"
+    end
+  end
+end
+
 class App < Sinatra::Base
   configure do
     @@redis = Redis.new(:url => "redis://#{ENV["REDIS_URL"]}")
+
     @@braintree_request_repository = BraintreeRequestRepository.new(@@redis)
     @@env_manager = EnvManager.new(@@redis)
 
@@ -59,6 +75,7 @@ class App < Sinatra::Base
     ))
 
     @@env_manager.activate!
+    puts Braintree::Configuration.instantiate.server
   end
 
   get "/capi_proxy/*" do
