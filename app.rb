@@ -24,6 +24,14 @@ class App < Sinatra::Base
       :private_key => 'd3af2d01d2828a068eca39455f864d1e'
     ))
 
+    @@env_manager.add(BraintreeEnvironment.new(
+      "qa",
+      :environment => :qa,
+      :merchant_id => 'integration_merchant_id',
+      :public_key => 'integration_public_key',
+      :private_key => 'integration_private_key'
+    ))
+
     @@env_manager.add(
     BraintreeEnvironment.new(
       "CC and PP Prod",
