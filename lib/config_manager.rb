@@ -3,9 +3,23 @@ require "braintree_account"
 require "open-uri"
 require "timeout"
 
+class Braintree::Configuration
+  def server # :nodoc:
+    case @environment
+    when :development
+      "localhost"
+    when :production
+      "#{endpoint}.braintreegateway.com"
+    when :qa
+      "gateway.qa.braintreepayments.com"
+    when :sandbox
+      "api.sandbox.braintreegateway.com"
+    end
+  end
+end
 
 class ConfigManager
-	attr_reader :current, :current_account, :current_merchant_account
+  attr_reader :current, :current_account, :current_merchant_account
   attr_accessor :current_merchant_account, :masked
 
 	def initialize
