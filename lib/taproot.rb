@@ -275,6 +275,16 @@ class Taproot < Sinatra::Base
   def _client_token(options = {})
     content_type :json
     client_token = Braintree::ClientToken.generate(params)
+
+    client_token_data = JSON.parse(Base64.decode64(client_token))
+    [ client_token_data["clientApiUrl"],
+    client_token_data["configUrl"],
+    client_token_data["analytics"]["url"] ].each do |url|
+      url.sub!(/qa2?/, "qa2")
+    end
+
+    client_token = Base64.encode64(JSON.generate(client_token_data))
+
     if options[:decoded]
       JSON.parse(Base64.decode64(client_token))
     else
