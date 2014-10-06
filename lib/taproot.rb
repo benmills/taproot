@@ -278,10 +278,10 @@ class Taproot < Sinatra::Base
 
     client_token_data = JSON.parse(Base64.decode64(client_token))
     [ client_token_data["clientApiUrl"],
-    client_token_data["configUrl"],
-    client_token_data["analytics"]["url"] ].each do |url|
+    client_token_data["configUrl"] ].each do |url|
       url.sub!(/qa2?/, "qa2")
     end
+    client_token_data.delete("analytics")
 
     client_token = Base64.encode64(JSON.generate(client_token_data))
 
