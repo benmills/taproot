@@ -283,7 +283,7 @@ class Taproot < Sinatra::Base
     end
     client_token_data.delete("analytics")
 
-    client_token = Base64.encode64(JSON.generate(client_token_data))
+    client_token = Base64.strict_encode64(JSON.generate(client_token_data))
 
     if options[:decoded]
       JSON.parse(Base64.decode64(client_token))
