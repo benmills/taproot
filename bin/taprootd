@@ -15,6 +15,10 @@ OptionParser.new do |opts|
     options[:merchant_id] = v
   end
 
+  opts.on("--merchant-account-id [id]", "Braintree Merchant Account ID") do |v|
+    options[:merchant_account_id] = v
+  end
+
   opts.on("--environment [env]", "Braintree Environment") do |v|
     options[:environment] = v.to_sym
   end
@@ -55,6 +59,12 @@ if ([:merchant_id, :environment, :public_key, :private_key] - options.keys).leng
     :private_key => options[:private_key]
   )
 end
+
+
+if (options[:merchant_account_id])
+  CONFIG_MANAGER.current_merchant_account = options[:merchant_account_id]
+end
+
 
 unless CONFIG_MANAGER.valid?
   puts "Need at least one Braintree account."
