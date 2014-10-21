@@ -1,255 +1,59 @@
-require "base64"
-require "braintree"
-require "json"
-require "redis"
 require "sinatra"
-require "rest-client"
+require "json"
+require "braintree"
+require "pry"
 
-require "./lib/braintree_env"
-require "./lib/braintree_request"
-require "./lib/braintree_request_repository"
-require "./lib/env_manager"
+required_env_vars = ["MERCHANT_ID", "PUBLIC_KEY", "PRIVATE_KEY", "MERCHANT_ACCOUNT", "ENVIRONMENT"]
+found_env_vars = ENV.keys & required_env_vars
 
-class Braintree::Configuration
-  def server # :nodoc:
-    case @environment
-    when :development
-      "localhost"
-    when :production
-      "#{endpoint}.braintreegateway.com"
-    when :qa
-      "gateway.qa.braintreepayments.com"
-    when :sandbox
-      "api.sandbox.braintreegateway.com"
-    end
-  end
+if found_env_vars.count != required_env_vars.count
+  puts "Missing env vars: #{(required_env_vars - found_env_vars).join(", ")}"
+  exit 1
 end
 
-class App < Sinatra::Base
-  configure do
-    @@redis = Redis.new(:url => "redis://#{ENV["REDIS_URL"]}")
+Braintree::Configuration.environment = ENV["ENVIRONMENT"].to_sym
+Braintree::Configuration.merchant_id = ENV["MERCHANT_ID"]
+Braintree::Configuration.public_key = ENV["PUBLIC_KEY"]
+Braintree::Configuration.private_key = ENV["PRIVATE_KEY"]
+Braintree::Configuration.logger = Logger.new("/dev/null")
 
-    @@braintree_request_repository = BraintreeRequestRepository.new(@@redis)
-    @@env_manager = EnvManager.new(@@redis)
+get "/" do
+  content_type :json
+  {
+    :message => "OK"
+  }.to_json
+end
 
-    @@env_manager.add(BraintreeEnvironment.new(
-      "Ben Sand",
-      :environment => :sandbox,
-      :merchant_id => 'qh5bmbx4v6pzw93h',
-      :public_key => '4fmd3mrwgc9bdvkh',
-      :private_key => 'd3af2d01d2828a068eca39455f864d1e'
-    ))
+get "/client_token" do
+  _ensure_customer_exists(params["customer_id"]) if params.has_key?("customer_id")
 
-    @@env_manager.add(BraintreeEnvironment.new(
-      "qa",
-      :environment => :qa,
-      :merchant_id => 'integration_merchant_id',
-      :public_key => 'integration_public_key',
-      :private_key => 'integration_private_key'
-    ))
+  content_type :json
+  {
+    :client_token => Braintree::ClientToken.generate(params)
+  }.to_json
+end
 
-    @@env_manager.add(
-    BraintreeEnvironment.new(
-      "CC and PP Prod",
-      :environment => :production,
-      :merchant_id => 'dfy45jdj3dxkmz5m',
-      :public_key => '8ph7456kwcnm4gdg',
-      :private_key => '056b38d6ba7a5ac07dedc38c8ec7b232'
-    ))
+post "/nonce/transaction" do
+  result = Braintree::Transaction.sale(:amount => 1, :payment_method_nonce => params["payment_method_nonce"])
 
-    @@env_manager.add(
-    BraintreeEnvironment.new(
-      "Mark",
-      :environment => :production,
-      :merchant_id => 'nxtmb3rqt8tr35v2',
-      :public_key => 'b2kqymfxnhx7wdtz',
-      :private_key => '8f00a7a5df9541ec05f2fa8e1b333f29'
-    ))
-
-    @@env_manager.add(BraintreeEnvironment.new(
-      "Ben",
-      :environment => :production,
-      :merchant_id => 'dnnsn36rs57sqvym',
-      :public_key => 'pkcp77fk7m52gx3t',
-      :private_key => '9a37eb11d451554bfeece5f20ec1cf35'
-    ))
-
-    @@env_manager.activate!
-    puts Braintree::Configuration.instantiate.server
+  if result.success?
+    result = Braintree::Transaction.void(result.transaction.id)
+    status_history = result.transaction.status_history.map(&:status).join("->")
+    message = "Transaction #{status_history} #{result.transaction.id}"
+  else
+    message = result.message
   end
 
-  get "/capi_proxy/*" do
-    url = request.path.split("/capi_proxy/")
-  end
+  content_type :json
+  {
+    :message => message
+  }.to_json
+end
 
-  get "/client_token" do
-    content_type :json
-    Base64.decode64(_generate_client_token)
-  end
-
-  get "/client_token.json" do
-    content_type :json
-    {:client_token => _generate_client_token}.to_json
-  end
-
-  get "/client_token/inspect" do
-    @client_token = Base64.decode64(_generate_client_token)
-    erb :client_token
-  end
-
-  get "/" do
-    @envs = @@env_manager.envs
-    @current_merchant_id = @@env_manager.current[:merchant_id]
-    @braintree_requests = @@braintree_request_repository.get
-
-    erb :env
-  end
-
-  get "/braintree_requests.json" do
-    content_type :json
-    JSON.pretty_generate(@@braintree_request_repository.get.map(&:as_json))
-  end
-
-  get "/transactions.json" do
-    results = Braintree::Transaction.search do |search|
-      search.created_at >= Time.now - 60*60*24
-    end
-
-    transactions = []
-
-    results.each do |transaction|
-      transactions << _transaction_to_json(transaction)
-    end
-
-    content_type :json
-    JSON.pretty_generate({
-      :transactions => transactions
-    })
-  end
-
-  post "/env" do
-    @@redis.del("braintree_requests")
-    @@env_manager.activate!(params[:new_env])
-    redirect "/"
-  end
-
-  get "/dropin" do
-    @client_token = _generate_client_token
-    erb :dropin
-  end
-
-  get "/custom" do
-    @client_token = Braintree::ClientToken.generate
-    erb :custom
-  end
-
-  post "/transaction" do
-    _create_transaction(params)
-    redirect "/"
-  end
-
-  post "/transaction.json" do
-    content_type :json
-
-    result = _sale(params["payment_method_nonce"])
-    braintree_request = BraintreeRequest.from_result(params, result)
-    @@braintree_request_repository.save(braintree_request)
-
-    if result.success?
-      _transaction_to_json(result.transaction).to_json
-    else
-      {
-        :error => result.message
-      }.to_json
-    end
-  end
-
-  post "/transaction/:transaction_id/void" do
-    _void_transaction(params)
-    redirect "/"
-  end
-
-  post "/transaction/:transaction_id/void.json" do
-    content_type :json
-
-    result = _void(params["transaction_id"])
-    braintree_request = BraintreeRequest.from_result(params, result)
-    @@braintree_request_repository.save(braintree_request)
-
-    if result.success?
-      _transaction_to_json(result.transaction).to_json
-    else
-      {
-        :error => result.message
-      }.to_json
-    end
-  end
-
-  post "/wipe" do
-    @@redis.flushall
-    redirect "/"
-  end
-
-  def _void_transaction(params)
-    result = _void(params["transaction_id"])
-    braintree_request = BraintreeRequest.from_result(params, result)
-    @@braintree_request_repository.save(braintree_request)
-    braintree_request
-  end
-
-  def _create_transaction(params)
-    result = _sale(params["payment_method_nonce"])
-    braintree_request = BraintreeRequest.from_result(params, result)
-    @@braintree_request_repository.save(braintree_request)
-    braintree_request
-  end
-
-  def _void(parse)
-    Braintree::Transaction.void(params["transaction_id"])
-  rescue Exception => e
-    OpenStruct.new(:success? => false, :message => e.message)
-  end
-
-  def _sale(nonce)
-    Braintree::Transaction.sale(:amount => 1, :payment_method_nonce => nonce)
-  rescue Exception => e
-    OpenStruct.new(:success? => false, :message => e.message)
-  end
-
-  def _generate_client_token(overrides={})
-    raw_client_token = Braintree::ClientToken.generate
-    client_token = JSON.parse(Base64.decode64(raw_client_token))
-
-    if params["touchDisabled"]
-      client_token["paypal"]["touchDisabled"] = true if client_token["paypalEnabled"]
-    end
-
-    if params["venmo"]
-      client_token["venmo"] = params["venmo"]
-      if params["venmo"] == "off"
-        client_token.delete("venmo")
-      end
-    end
-
-    client_token["paypal"]["allowHttp"] = true if client_token.has_key?("paypal")
-    # client_token["analytics"]["url"] = "#{client_token["clientApiUrl"]}/analytics"
-
-    Base64.strict_encode64(JSON.dump(client_token.merge(overrides))).chomp
-  end
-
-  def _transaction_to_json(transaction)
-    json = {
-      :id => transaction.id,
-      :status => transaction.status,
-      :amount => transaction.amount.to_i,
-    }
-
-    if transaction.payment_instrument_type == "credit_card"
-      json[:display] = "#{transaction.credit_card_details.card_type} ending in #{transaction.credit_card_details.last_4}"
-    else
-      json[:display] = "PayPal #{transaction.paypal_details.payer_email}"
-    end
-
-    json
+def _ensure_customer_exists(customer_id)
+  begin
+    Braintree::Customer.find(customer_id)
+  rescue Braintree::NotFoundError
+    Braintree::Customer.create(:id => customer_id)
   end
 end
