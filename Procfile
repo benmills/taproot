@@ -1,1 +1,1 @@
-web: start.sh
+web: ruby app.rb -p $PORT
