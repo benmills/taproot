@@ -34,7 +34,11 @@ get "/client_token" do
 end
 
 post "/nonce/transaction" do
-  result = Braintree::Transaction.sale(:amount => 1, :payment_method_nonce => params["payment_method_nonce"])
+  result = Braintree::Transaction.sale(
+    :amount => 1,
+    :payment_method_nonce => params["payment_method_nonce"],
+    :merchant_account_id => ENV['MERCHANT_ACCOUNT']
+  )
 
   if result.success?
     result = Braintree::Transaction.void(result.transaction.id)
@@ -54,6 +58,7 @@ post "/recurring" do
   result = Braintree::Transaction.sale(
     :amount => 1,
     :payment_method_nonce => params["payment_method_nonce"],
+    :merchant_account_id => ENV['MERCHANT_ACCOUNT'],
     :options => {
       :store_in_vault => true
     }
