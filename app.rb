@@ -38,10 +38,11 @@ get "/charge/:transaction_id" do
       search.order_id.is @transaction.id
   end
 
-  @total_captured += search_results.map(&:amount).map(&:to_i).reduce(&:+)
+  @total_captured += search_results.map(&:amount).map(&:to_i).reduce(&:+) || 0
 
   @fully_captured = @total_captured == total_auth
   @remaining_amount = total_auth - @total_captured
+
   erb :delayed
 end
 

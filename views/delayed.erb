@@ -21,5 +21,12 @@
   </p>
   <input type="submit" value="Charge Partial Order">
 </form>
+<% elsif @transaction.status == "voided" %>
+<h1>Finalized Order (<%= @transaction.status %>) <%= @transaction.id %></h1>
+<h2>Total Captured: $<%= @total_captured %> Uncaptured: $<%= @remaining_amount %></h2>
+<% else %>
+<h1>Pending Order <%= @transaction.id %></h1>
+<h2>Total Captured: $<%= @total_captured %> Remaining: $<%= @remaining_amount %></h2>
+<h2>Status: <%= @transaction.status %></h2>
 <% end %>
 <p><strong><%= @message %></strong></p>
