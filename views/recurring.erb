@@ -1,0 +1,9 @@
+<form method="post" action="/charge/recurring">
+  <h1>Recurring Charge</h1>
+  <p><%= @message %></p>
+  <p>
+    <label for="payment-method-token">Payment Method Token</label>
+    <input name="payment-method-token">
+  </p>
+  <input type="submit" value="Charge $10">
+</form>

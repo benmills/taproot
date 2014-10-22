@@ -1,0 +1,25 @@
+<% if @fully_captured %>
+  <h1>Order complete! <%= @transaction.id %></h1>
+<h2>Captured: $<%= @total_captured %></h2>
+<% elsif @transaction.status == "authorized" %>
+  <form method="post" action="/charge/<%= @transaction.id %>">
+  <h1>Pending Order <%= @transaction.id %></h1>
+  <h2>Total Auth: $<%= @transaction.amount.to_i %></h2>
+  <p>
+    <label for="amount">Partial Order Amount</label>
+    <input name="amount">
+  </p>
+  <input type="submit" value="Charge Partial Order">
+</form>
+<% elsif @transaction.status == "submitted_for_settlement" %>
+  <form method="post" action="/charge/<%= @transaction.id %>">
+  <h1>Pending Order <%= @transaction.id %></h1>
+  <h2>Total Captured: $<%= @total_captured %> Remaining: $<%= @remaining_amount %></h2>
+  <p>
+    <label for="amount">Partial Order Amount</label>
+    <input name="amount">
+  </p>
+  <input type="submit" value="Charge Partial Order">
+</form>
+<% end %>
+<p><strong><%= @message %></strong></p>
