@@ -50,6 +50,27 @@ post "/nonce/transaction" do
   }.to_json
 end
 
+post "/recurring" do
+  result = Braintree::Transaction.sale(
+    :amount => 1,
+    :payment_method_nonce => params["payment_method_nonce"],
+    :options => {
+      :store_in_vault => true
+    }
+  )
+
+  if result.success?
+    message = "Transaction #{result.transaction.status} #{result.transaction.id} payment method token #{result.transaction.credit_card_details.token}"
+  else
+    message = result.message
+  end
+
+  content_type :json
+  {
+    :message => message
+  }.to_json
+end
+
 def _ensure_customer_exists(customer_id)
   begin
     Braintree::Customer.find(customer_id)

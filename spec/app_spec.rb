@@ -84,4 +84,21 @@ describe "App" do
       expect(JSON.parse(last_response.body)["message"]).to eq("Cannot use a payment_method_nonce more than once.")
     end
   end
+
+  describe "POST /recurring" do
+    it "creates a transaction and stores it in the vault" do
+      post "/recurring", :payment_method_nonce => Braintree::Test::Nonce::Transactable
+
+      expect(last_response).to be_ok
+      expect(JSON.parse(last_response.body)["message"]).to include("authorized")
+      expect(JSON.parse(last_response.body)["message"]).to include("payment method token")
+    end
+
+    it "returns the error message if the transaction fails" do
+      post "/recurring", :payment_method_nonce => Braintree::Test::Nonce::Consumed
+
+      expect(last_response).to be_ok
+      expect(JSON.parse(last_response.body)["message"]).to eq("Cannot use a payment_method_nonce more than once.")
+    end
+  end
 end
