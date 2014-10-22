@@ -35,7 +35,7 @@ end
 
 post "/nonce/transaction" do
   result = Braintree::Transaction.sale(
-    :amount => 1,
+    :amount => 10,
     :payment_method_nonce => params["payment_method_nonce"],
     :merchant_account_id => ENV['MERCHANT_ACCOUNT']
   )
@@ -56,7 +56,7 @@ end
 
 post "/recurring" do
   result = Braintree::Transaction.sale(
-    :amount => 1,
+    :amount => 10,
     :payment_method_nonce => params["payment_method_nonce"],
     :merchant_account_id => ENV['MERCHANT_ACCOUNT'],
     :options => {
