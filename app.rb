@@ -139,13 +139,16 @@ post "/recurring" do
 
   if result.success?
     message = "Transaction #{result.transaction.status} #{result.transaction.id} payment method token #{result.transaction.credit_card_details.token}"
+    transaction_id = result.transaction.id
   else
     message = result.message
+    transaction_id = nil
   end
 
   content_type :json
   {
-    :message => message
+    :message => message,
+    :transaction_id => transaction_id
   }.to_json
 end
 
